@@ -1,12 +1,15 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-// In production, use DATA_PATH env var (Railway volume mount) so data survives redeployments
 const DB_PATH = process.env.DATA_PATH
   ? join(process.env.DATA_PATH, 'items.json')
   : join(__dirname, 'items.json')
+
+// Ensure the storage directory exists before any reads or writes.
+// Critical for Railway volume mounts where the directory may not exist yet.
+mkdirSync(dirname(DB_PATH), { recursive: true })
 
 let data = { items: [], nextId: 1 }
 
@@ -19,7 +22,13 @@ if (existsSync(DB_PATH)) {
 }
 
 function save() {
-  writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8')
+  try {
+    writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8')
+  } catch (e) {
+    // Log but never throw — disk errors must not prevent syncAll() from firing.
+    // In-memory state is authoritative; persistence is best-effort.
+    console.error('[db] Failed to persist items:', e.message)
+  }
 }
 
 export function getAllItems() {

@@ -7,6 +7,20 @@ import ExportButton from './components/ExportButton'
 export default function App() {
   const [items, setItems] = useState([])
 
+  // Android Chrome doesn't fire blur when tapping non-focusable areas.
+  // This forces blur on the active input whenever a touch lands outside an input/select.
+  useEffect(() => {
+    const handleTouchStart = (e) => {
+      const active = document.activeElement
+      if (!active) return
+      const tag = active.tagName
+      if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return
+      if (!active.contains(e.target)) active.blur()
+    }
+    document.addEventListener('touchstart', handleTouchStart, { passive: true })
+    return () => document.removeEventListener('touchstart', handleTouchStart)
+  }, [])
+
   useEffect(() => {
     const onInit = (data) => setItems(data)
     const onAdded = (item) => setItems((prev) => [...prev, item])

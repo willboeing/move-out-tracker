@@ -12,6 +12,8 @@ const PERSON_COLORS = {
 const fmt = (n) =>
   n != null ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : ''
 
+const blurOnEnter = (e) => { if (e.key === 'Enter') e.target.blur() }
+
 export default function ItemRow({ item, onUpdate, onDelete }) {
   const [name, setName] = useState(item.name ?? '')
   const [cost, setCost] = useState(item.original_cost != null ? String(item.original_cost) : '')
@@ -36,8 +38,11 @@ export default function ItemRow({ item, onUpdate, onDelete }) {
           className="cell-input"
           value={name}
           placeholder="Item name"
+          inputMode="text"
+          enterKeyHint="done"
           onChange={(e) => setName(e.target.value)}
           onBlur={() => commit({ name })}
+          onKeyDown={blurOnEnter}
         />
       </td>
 
@@ -51,8 +56,11 @@ export default function ItemRow({ item, onUpdate, onDelete }) {
             placeholder="0.00"
             min="0"
             step="0.01"
+            inputMode="decimal"
+            enterKeyHint="done"
             onChange={(e) => setCost(e.target.value)}
             onBlur={() => commit({ original_cost: cost === '' ? null : parseFloat(cost) })}
+            onKeyDown={blurOnEnter}
           />
         </div>
       </td>
@@ -91,8 +99,11 @@ export default function ItemRow({ item, onUpdate, onDelete }) {
               placeholder="0.00"
               min="0"
               step="0.01"
+              inputMode="decimal"
+              enterKeyHint="done"
               onChange={(e) => setFbPrice(e.target.value)}
               onBlur={() => commit({ fb_price: fbPrice === '' ? null : parseFloat(fbPrice) })}
+              onKeyDown={blurOnEnter}
             />
           </div>
         ) : (

@@ -9,26 +9,26 @@ const PERSON_COLORS = {
   'Facebook Marketplace': { bg: '#F3E8FF', text: '#6B21A8' }
 }
 
-const fmt = (n) =>
-  n != null ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : ''
-
 const blurOnEnter = (e) => { if (e.key === 'Enter') e.target.blur() }
 
 export default function ItemRow({ item, onUpdate, onDelete }) {
   const [name, setName] = useState(item.name ?? '')
   const [cost, setCost] = useState(item.original_cost != null ? String(item.original_cost) : '')
+  const [claimedBy, setClaimedBy] = useState(item.claimed_by ?? '')
   const [fbPrice, setFbPrice] = useState(item.fb_price != null ? String(item.fb_price) : '')
 
-  // Sync local state when server broadcasts an update from another client
+  // Sync all fields from server broadcasts. claimed_by must be in deps —
+  // it has no other reactive path to update the select on other clients.
   useEffect(() => {
     setName(item.name ?? '')
     setCost(item.original_cost != null ? String(item.original_cost) : '')
+    setClaimedBy(item.claimed_by ?? '')
     setFbPrice(item.fb_price != null ? String(item.fb_price) : '')
-  }, [item.name, item.original_cost, item.fb_price])
+  }, [item.name, item.original_cost, item.claimed_by, item.fb_price])
 
   const commit = (fields) => onUpdate(item.id, fields)
 
-  const colors = item.claimed_by ? PERSON_COLORS[item.claimed_by] : null
+  const colors = claimedBy ? PERSON_COLORS[claimedBy] : null
 
   return (
     <tr className="item-row">
@@ -69,8 +69,12 @@ export default function ItemRow({ item, onUpdate, onDelete }) {
         <div className="claimed-cell">
           <select
             className="cell-select"
-            value={item.claimed_by ?? ''}
-            onChange={(e) => commit({ claimed_by: e.target.value || null })}
+            value={claimedBy}
+            onChange={(e) => {
+              const val = e.target.value
+              setClaimedBy(val)
+              commit({ claimed_by: val || null })
+            }}
           >
             <option value="">— unassigned —</option>
             {PEOPLE.map((p) => (
@@ -82,14 +86,14 @@ export default function ItemRow({ item, onUpdate, onDelete }) {
               className="person-badge"
               style={{ background: colors.bg, color: colors.text }}
             >
-              {item.claimed_by}
+              {claimedBy}
             </span>
           )}
         </div>
       </td>
 
       <td>
-        {item.claimed_by === 'Facebook Marketplace' ? (
+        {claimedBy === 'Facebook Marketplace' ? (
           <div className="cost-cell">
             <span className="currency-prefix">$</span>
             <input

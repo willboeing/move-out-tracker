@@ -22,21 +22,14 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const onInit = (data) => setItems(data)
-    const onAdded = (item) => setItems((prev) => [...prev, item])
-    const onUpdated = (item) => setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
-    const onDeleted = ({ id }) => setItems((prev) => prev.filter((i) => i.id !== id))
+    // Single handler: server always sends the full authoritative list.
+    // Used for initial load (on connect) and after every mutation.
+    const onSync = (data) => setItems(data)
 
-    socket.on('items:init', onInit)
-    socket.on('item:added', onAdded)
-    socket.on('item:updated', onUpdated)
-    socket.on('item:deleted', onDeleted)
+    socket.on('items:sync', onSync)
 
     return () => {
-      socket.off('items:init', onInit)
-      socket.off('item:added', onAdded)
-      socket.off('item:updated', onUpdated)
-      socket.off('item:deleted', onDeleted)
+      socket.off('items:sync', onSync)
     }
   }, [])
 

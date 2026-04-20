@@ -22,23 +22,22 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    // Single handler: server always sends the full authoritative list.
-    // Used for initial load (on connect) and after every mutation.
+    // REST fetch handles initial load and reconnects — avoids the socket
+    // timing race where the server fires items:sync before this listener
+    // is registered (socket connects at module import, before React mounts).
+    const fetchItems = () =>
+      fetch('/api/items').then((r) => r.json()).then(setItems).catch(() => {})
+
+    fetchItems()
+    socket.on('connect', fetchItems)
+
+    // Socket handles all real-time push updates after mutations.
     const onSync = (data) => setItems(data)
     socket.on('items:sync', onSync)
 
-    // socket.js creates the connection at module import time, before React
-    // mounts. The server emits items:sync on connect, but this effect runs
-    // after the first render — so that initial event is often already gone.
-    // If already connected, request a sync now. Re-request on every
-    // reconnect so server restarts/redeploys never leave stale UI.
-    const requestSync = () => socket.emit('items:get')
-    socket.on('connect', requestSync)
-    if (socket.connected) requestSync()
-
     return () => {
+      socket.off('connect', fetchItems)
       socket.off('items:sync', onSync)
-      socket.off('connect', requestSync)
     }
   }, [])
 

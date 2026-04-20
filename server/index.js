@@ -37,6 +37,10 @@ io.on('connection', (socket) => {
   // Send full list to the newly connected client
   socket.emit('items:sync', getAllItems())
 
+  socket.on('items:get', () => {
+    socket.emit('items:sync', getAllItems())
+  })
+
   socket.on('item:add', () => {
     try {
       insertItem({ name: '', original_cost: null, claimed_by: null, fb_price: null })
